@@ -1,4 +1,6 @@
-from typing import TypeVar, Union
+from functools import singledispatch
+from importlib.util import find_spec
+from typing import Callable, Optional, TypeVar, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -33,6 +35,7 @@ from ._powerboxes import rotated_giou_distance as _rotated_giou_distance
 from ._powerboxes import rotated_iou_distance as _rotated_iou_distance
 from ._powerboxes import rotated_tiou_distance as _rotated_tiou_distance
 
+HAS_TORCH = find_spec("torch") is not None
 _BOXES_NOT_SAME_TYPE = "boxes1 and boxes2 must have the same dtype"
 _BOXES_NOT_NP_ARRAY = "boxes must be numpy array"
 supported_dtypes = [
@@ -100,6 +103,7 @@ def _dispatch1(dispatch_map, boxes, *args):
 # ---------------------------------------------------------------------------
 
 
+@singledispatch
 def ciou_distance(
     boxes1: npt.NDArray[Union[np.float32, np.float64]],
     boxes2: npt.NDArray[Union[np.float32, np.float64]],
@@ -123,6 +127,7 @@ def ciou_distance(
     return _dispatch2(_dtype_to_func_ciou_distance, boxes1, boxes2)
 
 
+@singledispatch
 def diou_distance(
     boxes1: npt.NDArray[Union[np.float32, np.float64]],
     boxes2: npt.NDArray[Union[np.float32, np.float64]],
@@ -145,6 +150,7 @@ def diou_distance(
     return _dispatch2(_dtype_to_func_diou_distance, boxes1, boxes2)
 
 
+@singledispatch
 def iou_distance(
     boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
 ) -> npt.NDArray[np.float64]:
@@ -164,6 +170,7 @@ def iou_distance(
     return _dispatch2(_dtype_to_func_iou_distance, boxes1, boxes2)
 
 
+@singledispatch
 def parallel_iou_distance(
     boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
 ) -> npt.NDArray[np.float64]:
@@ -183,6 +190,7 @@ def parallel_iou_distance(
     return _dispatch2(_dtype_to_func_parallel_iou_distance, boxes1, boxes2)
 
 
+@singledispatch
 def giou_distance(
     boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
 ) -> npt.NDArray[np.float64]:
@@ -204,6 +212,7 @@ def giou_distance(
     return _dispatch2(_dtype_to_func_giou_distance, boxes1, boxes2)
 
 
+@singledispatch
 def parallel_giou_distance(
     boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
 ) -> npt.NDArray[np.float64]:
@@ -225,6 +234,7 @@ def parallel_giou_distance(
     return _dispatch2(_dtype_to_func_parallel_giou_distance, boxes1, boxes2)
 
 
+@singledispatch
 def tiou_distance(
     boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
 ) -> npt.NDArray[np.float64]:
@@ -246,6 +256,7 @@ def tiou_distance(
     return _dispatch2(_dtype_to_func_tiou_distance, boxes1, boxes2)
 
 
+@singledispatch
 def rotated_iou_distance(
     boxes1: npt.NDArray[np.float64], boxes2: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64]:
@@ -273,6 +284,7 @@ def rotated_iou_distance(
     raise TypeError(f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype")
 
 
+@singledispatch
 def parallel_rotated_iou_distance(
     boxes1: npt.NDArray[np.float64], boxes2: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64]:
@@ -300,6 +312,7 @@ def parallel_rotated_iou_distance(
     raise TypeError(f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype")
 
 
+@singledispatch
 def rotated_giou_distance(
     boxes1: npt.NDArray[np.float64], boxes2: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64]:
@@ -327,6 +340,7 @@ def rotated_giou_distance(
     raise TypeError(f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype")
 
 
+@singledispatch
 def parallel_rotated_giou_distance(
     boxes1: npt.NDArray[np.float64], boxes2: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64]:
@@ -354,6 +368,7 @@ def parallel_rotated_giou_distance(
     raise TypeError(f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype")
 
 
+@singledispatch
 def rotated_tiou_distance(
     boxes1: npt.NDArray[np.float64], boxes2: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64]:
@@ -383,6 +398,7 @@ def rotated_tiou_distance(
     raise TypeError(f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype")
 
 
+@singledispatch
 def parallel_rotated_tiou_distance(
     boxes1: npt.NDArray[np.float64], boxes2: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64]:
@@ -412,6 +428,7 @@ def parallel_rotated_tiou_distance(
     raise TypeError(f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype")
 
 
+@singledispatch
 def remove_small_boxes(boxes: npt.NDArray[T], min_size: float) -> npt.NDArray[T]:
     """Remove boxes with area less than min_area.
 
@@ -428,6 +445,7 @@ def remove_small_boxes(boxes: npt.NDArray[T], min_size: float) -> npt.NDArray[T]
     return _dispatch1(_dtype_to_func_remove_small_boxes, boxes, min_size)
 
 
+@singledispatch
 def boxes_areas(boxes: npt.NDArray[T]) -> npt.NDArray[np.float64]:
     """Compute areas of boxes.
 
@@ -440,6 +458,7 @@ def boxes_areas(boxes: npt.NDArray[T]) -> npt.NDArray[np.float64]:
     return _dispatch1(_dtype_to_func_box_areas, boxes)
 
 
+@singledispatch
 def box_convert(boxes: npt.NDArray[T], in_fmt: str, out_fmt: str) -> npt.NDArray[T]:
     """Convert boxes from one format to another.
 
@@ -459,6 +478,7 @@ def box_convert(boxes: npt.NDArray[T], in_fmt: str, out_fmt: str) -> npt.NDArray
     return _dispatch1(_dtype_to_func_box_convert, boxes, in_fmt, out_fmt)
 
 
+@singledispatch
 def masks_to_boxes(masks: npt.NDArray[np.bool_]) -> npt.NDArray[np.uint64]:
     """Convert masks to boxes in xyxy format.
 
@@ -476,6 +496,7 @@ def masks_to_boxes(masks: npt.NDArray[np.bool_]) -> npt.NDArray[np.uint64]:
     return _masks_to_boxes(masks)
 
 
+@singledispatch
 def nms(
     boxes: npt.NDArray[T],
     scores: npt.NDArray[np.float64],
@@ -501,6 +522,7 @@ def nms(
     return _dispatch1(_dtype_to_func_nms, boxes, scores, iou_threshold, score_threshold)
 
 
+@singledispatch
 def rotated_nms(
     boxes: npt.NDArray[T],
     scores: npt.NDArray[np.float64],
@@ -528,6 +550,7 @@ def rotated_nms(
     )
 
 
+@singledispatch
 def rtree_nms(
     boxes: npt.NDArray[Union[np.float64, np.float32, np.int64, np.int32, np.int16]],
     scores: npt.NDArray[np.float64],
@@ -558,6 +581,7 @@ def rtree_nms(
     )
 
 
+@singledispatch
 def rtree_rotated_nms(
     boxes: npt.NDArray[Union[np.float64, np.float32, np.int64, np.int32, np.int16]],
     scores: npt.NDArray[np.float64],
@@ -588,10 +612,11 @@ def rtree_rotated_nms(
     )
 
 
+@singledispatch
 def draw_boxes(
     image: npt.NDArray[np.uint8],
     boxes: npt.NDArray[np.float64],
-    colors: npt.NDArray[np.uint8] = None,
+    colors: Optional[npt.NDArray[np.uint8]] = None,
     thickness: int = 2,
     filled: bool = False,
     opacity: float = 1.0,
@@ -617,10 +642,11 @@ def draw_boxes(
     return _draw_boxes(image, boxes, colors, thickness, filled, opacity)
 
 
+@singledispatch
 def draw_rotated_boxes(
     image: npt.NDArray[np.uint8],
     boxes: npt.NDArray[np.float64],
-    colors: npt.NDArray[np.uint8] = None,
+    colors: Optional[npt.NDArray[np.uint8]] = None,
     thickness: int = 2,
     filled: bool = False,
     opacity: float = 1.0,
@@ -646,30 +672,111 @@ def draw_rotated_boxes(
     return _draw_rotated_boxes(image, boxes, colors, thickness, filled, opacity)
 
 
+if HAS_TORCH:
+    import torch
+
+    def register_iou_distance(distance_func: Callable):
+        @distance_func.register
+        def _(boxes1: torch.Tensor, boxes2: torch.Tensor) -> torch.Tensor:
+            device = boxes1.device
+            boxes1_np = boxes1.cpu().numpy()
+            boxes2_np = boxes2.cpu().numpy()
+            dist = distance_func(boxes1_np, boxes2_np)
+            return torch.from_numpy(dist).to(device=device)
+
+    for dist_func in [
+        ciou_distance,
+        diou_distance,
+        giou_distance,
+        iou_distance,
+        parallel_giou_distance,
+        parallel_iou_distance,
+        parallel_rotated_giou_distance,
+        parallel_rotated_iou_distance,
+        parallel_rotated_tiou_distance,
+        rotated_giou_distance,
+        rotated_iou_distance,
+        rotated_tiou_distance,
+    ]:
+        register_iou_distance(dist_func)
+
+    def register_nms_func(nms_func: Callable):
+        @nms_func.register
+        def _(
+            boxes: torch.Tensor,
+            scores: torch.Tensor,
+            iou_threshold: float,
+            score_threshold: float,
+        ) -> torch.Tensor:
+            device = boxes.device
+            boxes_np = boxes.cpu().numpy()
+            scores_np = scores.cpu().numpy().astype(np.float64)
+            indices = nms_func(boxes_np, scores_np, iou_threshold, score_threshold)
+            return torch.from_numpy(indices).to(device=device)
+
+    for nms_func in [nms, rtree_nms, rotated_nms, rtree_rotated_nms]:
+        register_nms_func(nms_func)
+
+    def register_draw_func(draw_func: Callable):
+        @draw_func.register
+        def _(
+            image: torch.Tensor,
+            boxes: torch.Tensor,
+            colors: Optional[torch.Tensor] = None,
+            thickness: int = 2,
+            filled: bool = False,
+            opacity: float = 1.0,
+        ) -> torch.Tensor:
+            device = image.device
+            image_np = image.cpu().numpy().astype(np.uint8)
+            boxes_np = boxes.cpu().numpy().astype(np.float64)
+            colors_np = colors.cpu().numpy().astype(np.uint8)
+            return _draw_rotated_boxes(
+                image_np, boxes_np, colors_np, thickness, filled, opacity
+            )
+            image_w_box = draw_func(
+                image_np, boxes_np, colors_np, thickness, filled, opacity
+            )
+            return torch.from_numpy(image_w_box).to(device=device)
+
+    for draw_func in [draw_boxes, draw_rotated_boxes]:
+        register_draw_func(draw_func)
+
+    def register_single_tensor_func(single_func):
+        @single_func.register
+        def _(input_tensor: torch.Tensor, *args, **kwargs) -> torch.Tensor:
+            input_np = input_tensor.cpu().numpy()
+            out_tensor = single_func(input_np, *args, **kwargs)
+            return torch.from_numpy(out_tensor).to(device=input_tensor.device)
+
+    for single_func in [masks_to_boxes, box_convert, boxes_areas, remove_small_boxes]:
+        register_single_tensor_func(single_func)
+
+
 __all__ = [
+    "__version__",
+    "box_convert",
+    "boxes_areas",
     "ciou_distance",
     "diou_distance",
-    "iou_distance",
-    "parallel_iou_distance",
-    "giou_distance",
-    "parallel_giou_distance",
-    "tiou_distance",
-    "rotated_iou_distance",
-    "parallel_rotated_iou_distance",
-    "rotated_giou_distance",
-    "parallel_rotated_giou_distance",
-    "rotated_tiou_distance",
-    "parallel_rotated_tiou_distance",
-    "remove_small_boxes",
-    "boxes_areas",
-    "box_convert",
-    "masks_to_boxes",
-    "nms",
-    "rotated_nms",
-    "rtree_nms",
-    "rtree_rotated_nms",
     "draw_boxes",
     "draw_rotated_boxes",
+    "giou_distance",
+    "iou_distance",
+    "masks_to_boxes",
+    "nms",
+    "parallel_giou_distance",
+    "parallel_iou_distance",
+    "parallel_rotated_giou_distance",
+    "parallel_rotated_iou_distance",
+    "parallel_rotated_tiou_distance",
+    "remove_small_boxes",
+    "rotated_giou_distance",
+    "rotated_iou_distance",
+    "rotated_nms",
+    "rotated_tiou_distance",
+    "rtree_nms",
+    "rtree_rotated_nms",
     "supported_dtypes",
-    "__version__",
+    "tiou_distance",
 ]
