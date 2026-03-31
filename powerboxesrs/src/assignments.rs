@@ -7,8 +7,8 @@ use pulp::{Arch, Simd, WithSimd};
 
 // Cost matrix size above which we use parallel_iou_distance_slice
 const PARALLEL_IOU_MIN_BOXES: usize = 90_000;
-// If more than 95% boxes dont overlap, lsap_simd is slower than lsap
-const SIMD_MAX_SPARSITY: f64 = 0.95;
+// If more than 98% boxes dont overlap, lsap_simd is slower than lsap
+const SIMD_MAX_SPARSITY: f64 = 0.98;
 
 /// Shortest Augmenting Path algorithm for the Linear Sum Assignment Problem.
 ///
@@ -80,13 +80,12 @@ where
             }
 
             min_val = lowest;
-            let j = idx;
-            visited[j] = true;
+            visited[idx] = true;
 
-            if row4col[j] == usize::MAX {
-                sink = j;
+            if row4col[idx] == usize::MAX {
+                sink = idx;
             } else {
-                i = row4col[j];
+                i = row4col[idx];
             }
         }
 
@@ -118,12 +117,11 @@ where
 
     col4row
 }
-
 /// SIMD implementation for LSAP
 struct InnerScan<'a> {
     c_row: &'a [f32],
     v: &'a [f32],
-    visited: &'a [u8],
+    visited: &'a [u32],
     spc: &'a mut [f32],
     path: &'a mut [u32],
     row4col: &'a [u32],
@@ -167,29 +165,33 @@ impl WithSimd for InnerScan<'_> {
         let (v_chunks, _) = S::as_simd_f32s(v);
         let (spc_chunks, _) = S::as_mut_simd_f32s(spc);
         let (path_chunks, _) = S::as_mut_simd_u32s(path);
+        let (vis_chunks, _) = S::as_simd_u32s(visited);
 
         let lanes = std::mem::size_of::<S::f32s>() / 4;
 
-        for (chunk_idx, (((c_v, v_v), spc_v), path_v)) in c_chunks
+        // Precompute iota = [0, 1, 2, ..., lanes-1] once.
+        // Per-chunk indices are derived as iota + splat(base)
+        let iota: S::u32s = {
+            let mut buf = zero_u;
+            let buf_slice: &mut [u32] = bytemuck::cast_slice_mut(std::slice::from_mut(&mut buf));
+            for (k, dst) in buf_slice.iter_mut().enumerate() {
+                *dst = k as u32;
+            }
+            buf
+        };
+
+        for (chunk_idx, ((((c_v, v_v), spc_v), path_v), vis_v)) in c_chunks
             .iter()
             .zip(v_chunks.iter())
             .zip(spc_chunks.iter_mut())
             .zip(path_chunks.iter_mut())
+            .zip(vis_chunks.iter())
             .enumerate()
         {
             let base = chunk_idx * lanes;
 
-            // Widen u8 visited flags → u32 lanes, then build mask where != 0
-            let vis_u32: S::u32s = {
-                let mut buf = zero_u;
-                let buf_slice: &mut [u32] =
-                    bytemuck::cast_slice_mut(std::slice::from_mut(&mut buf));
-                for (dst, &src) in buf_slice.iter_mut().zip(visited[base..].iter()) {
-                    *dst = src as u32;
-                }
-                buf
-            };
-            let is_visited = simd.greater_than_u32s(vis_u32, zero_u);
+            // visited is already u32; cast directly to a SIMD vector and mask
+            let is_visited = simd.greater_than_u32s(*vis_v, zero_u);
 
             // r = c[j] - v[j] + (min_val - u_i)
             let r = simd.add_f32s(simd.sub_f32s(*c_v, *v_v), offset);
@@ -207,16 +209,8 @@ impl WithSimd for InnerScan<'_> {
             // For argmin: mask visited lanes out with infinity
             let cost_for_min = simd.select_f32s_m32s(is_visited, inf_v, *spc_v);
 
-            // Column indices for this chunk
-            let col_indices: S::u32s = {
-                let mut buf = zero_u;
-                let buf_slice: &mut [u32] =
-                    bytemuck::cast_slice_mut(std::slice::from_mut(&mut buf));
-                for (k, dst) in buf_slice.iter_mut().enumerate() {
-                    *dst = (base + k) as u32;
-                }
-                buf
-            };
+            // Column indices for this chunk: iota + base
+            let col_indices = simd.add_u32s(iota, simd.splat_u32s(base as u32));
 
             // Update running per-lane argmin
             let new_is_better = simd.less_than_f32s(cost_for_min, best_cost_v);
@@ -241,7 +235,7 @@ impl WithSimd for InnerScan<'_> {
         // Scalar tail: remainder columns that don't fill a full SIMD vector
         let tail_start = ncol - c_tail.len();
         for j in tail_start..ncol {
-            if visited[j] == 0 {
+            if visited[j] == 0u32 {
                 let r = c_row[j] - u_i - v[j] + min_val;
                 if r < spc[j] {
                     spc[j] = r;
@@ -295,11 +289,13 @@ pub fn lsap_simd(c: &[f32], nrow: usize, ncol: usize) -> Vec<usize> {
     let mut v = vec![0f32; ncol];
     let mut col4row = vec![usize::MAX; nrow];
     let mut row4col = vec![u32::MAX; ncol];
-    let mut visited = vec![0u8; ncol];
+    let mut visited = vec![0u32; ncol];
+    let mut spc = vec![f32::INFINITY; ncol];
+    let mut path = vec![u32::MAX; ncol];
 
     for cur_row in 0..nrow {
-        let mut spc = vec![f32::INFINITY; ncol];
-        let mut path = vec![u32::MAX; ncol];
+        spc.fill(f32::INFINITY);
+        path.fill(u32::MAX);
         visited.fill(0);
 
         let mut i = cur_row;
