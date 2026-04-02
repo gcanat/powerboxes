@@ -240,6 +240,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
+name = "perfect-matching"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13d16e34b987611024a80061809e2c639a7b934259a54111f0f601001343d61c"
+dependencies = [
+ "bytemuck",
+ "num-traits",
+ "pulp",
+]
+
+[[package]]
 name = "portable-atomic"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -249,10 +260,9 @@ checksum = "f59e70c4aef1e55797c2e8fd94a4f2a973fc972cfde0e0b05f683667b0cd39dd"
 name = "powerboxesrs"
 version = "0.3.1"
 dependencies = [
- "bytemuck",
  "ndarray",
  "num-traits",
- "pulp",
+ "perfect-matching",
  "rayon",
  "rstar",
  "wide",
