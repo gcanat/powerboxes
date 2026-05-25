@@ -9,6 +9,7 @@ from powerboxes import (
     diou_distance,
     giou_distance,
     iou_distance,
+    lsap_iou,
     masks_to_boxes,
     nms,
     parallel_giou_distance,
@@ -472,3 +473,49 @@ def test_rotated_nms_bad_dtype():
     scores = np.random.random((100,))
     with pytest.raises(TypeError):
         rotated_nms(boxes.astype(unsuported_dtype_example), scores, 0.5, 0.5)
+
+
+@pytest.mark.parametrize("dtype", supported_dtypes)
+def test_lsap_iou(dtype):
+    # use non-degenerate integer-friendly coordinates so the cost matrix
+    # is well-defined across every supported dtype
+    topleft = np.random.uniform(0, 500, size=(50, 2))
+    wh = np.random.uniform(10, 100, size=(50, 2))
+    boxes1 = np.concatenate([topleft, topleft + wh], axis=1)
+    topleft2 = np.random.uniform(0, 500, size=(50, 2))
+    boxes2 = np.concatenate([topleft2, topleft2 + wh], axis=1)
+    pairs = lsap_iou(boxes1.astype(dtype), boxes2.astype(dtype))
+    assert isinstance(pairs, list)
+    for p in pairs:
+        assert len(p) == 2
+        assert 0 <= p[0] < 50 and 0 <= p[1] < 50
+    # an assignment uses each row/col at most once
+    assert len({p[0] for p in pairs}) == len(pairs)
+    assert len({p[1] for p in pairs}) == len(pairs)
+
+
+def test_lsap_iou_identity():
+    boxes = np.array(
+        [[0.0, 0.0, 1.0, 1.0], [2.0, 2.0, 3.0, 3.0], [4.0, 4.0, 5.0, 5.0]]
+    )
+    pairs = lsap_iou(boxes, boxes)
+    assert sorted(pairs) == [(0, 0), (1, 1), (2, 2)]
+
+
+def test_lsap_iou_threshold_filters_non_overlap():
+    boxes1 = np.array([[0.0, 0.0, 1.0, 1.0]])
+    boxes2 = np.array([[10.0, 10.0, 11.0, 11.0]])
+    # IoU is 0, so any positive threshold should discard the match.
+    assert lsap_iou(boxes1, boxes2, iou_threshold=0.1) == []
+
+
+def test_lsap_iou_bad_inputs():
+    with pytest.raises(TypeError, match=_BOXES_NOT_NP_ARRAY):
+        lsap_iou("foo", "bar")
+
+
+def test_lsap_iou_bad_dtype():
+    boxes1 = np.random.random((10, 4)).astype(unsuported_dtype_example)
+    boxes2 = np.random.random((10, 4)).astype(unsuported_dtype_example)
+    with pytest.raises(TypeError):
+        lsap_iou(boxes1, boxes2)

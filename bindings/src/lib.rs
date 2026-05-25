@@ -826,8 +826,8 @@ fn lsap_iou_generic<T>(
 where
     T: Num + ToPrimitive + PartialOrd + numpy::Element + Copy,
 {
-    let boxes1 = preprocess_boxes(boxes1).unwrap();
-    let boxes2 = preprocess_boxes(boxes2).unwrap();
+    let boxes1 = preprocess_boxes(boxes1)?;
+    let boxes2 = preprocess_boxes(boxes2)?;
     let asgmt = assignments::lsap_iou(boxes1, boxes2, iou_threshold);
     Ok(asgmt)
 }

@@ -12,10 +12,10 @@ const SIMD_MAX_SPARSITY: f64 = 0.98;
 /// Compute the optimal assignment between two sets of axis-aligned bounding boxes
 /// using the LSAP algorithm, minimising the total IoU distance.
 ///
-/// Given `n1` ground-truth boxes and `n2` predicted boxes the function builds the
-/// `min(n1,n2) × max(n1,n2)` cost matrix from `iou_distance_slice`, scales the
-/// `f64` costs to `i64` (multiplied by `1e15`), and calls `lsap`.
-/// After matching, pairs whose IoU is below `iou_threshold` are discarded.
+/// Builds the `min(n1,n2) × max(n1,n2)` cost matrix from `iou_distance_slice`,
+/// casts the `f64` costs to `f32`, then dispatches to `lsap_simd` or `lsap_scalar`
+/// depending on cost-matrix sparsity. After matching, pairs whose IoU is below
+/// `iou_threshold` are discarded.
 ///
 /// # Arguments
 ///
@@ -27,9 +27,8 @@ const SIMD_MAX_SPARSITY: f64 = 0.98;
 ///
 /// # Returns
 ///
-/// A pair `(indices1, indices2)` of equal-length `Vec<usize>` such that
-/// `boxes1[indices1[k]]` is matched to `boxes2[indices2[k]]`.
-/// The length of both vectors is at most `min(n1, n2)`.
+/// A `Vec<(usize, usize)>` of matched index pairs `(i, j)` such that
+/// `boxes1[i]` is matched to `boxes2[j]`. Length is at most `min(n1, n2)`.
 pub fn lsap_iou_slice<N>(
     boxes1: &[N],
     boxes2: &[N],
@@ -109,7 +108,7 @@ where
 ///
 /// # Returns
 ///
-/// A pair `(indices1, indices2)` of equal-length `Vec<usize>` of length at most `min(N, M)`.
+/// A `Vec<(usize, usize)>` of matched index pairs of length at most `min(N, M)`.
 #[cfg(feature = "ndarray")]
 pub fn lsap_iou<'a, N, BA>(boxes1: BA, boxes2: BA, iou_threshold: f64) -> Vec<(usize, usize)>
 where
