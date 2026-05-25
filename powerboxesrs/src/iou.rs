@@ -437,9 +437,7 @@ mod tests {
     #[test]
     fn test_parallel_iou_distance_slice_matches_serial() {
         // multi-row case to exercise rayon's row partitioning
-        let boxes1 = vec![
-            0.0, 0.0, 2.0, 2.0, 1.0, 1.0, 3.0, 3.0, 5.0, 5.0, 6.0, 6.0,
-        ];
+        let boxes1 = vec![0.0, 0.0, 2.0, 2.0, 1.0, 1.0, 3.0, 3.0, 5.0, 5.0, 6.0, 6.0];
         let boxes2 = vec![0.0, 0.0, 2.0, 2.0, 3.0, 3.0, 4.0, 4.0];
         let serial = iou_distance_slice(&boxes1, &boxes2, 3, 2);
         let parallel = parallel_iou_distance_slice(&boxes1, &boxes2, 3, 2);
