@@ -22,6 +22,7 @@ ndarray = ["dep:ndarray"]
 [dependencies]
 ndarray = { version = ">=0.15, <=0.16", features = ["rayon"], optional = true }
 num-traits = "0.2.17"
+perfect-matching = "0.1.0"
 rayon = "1.8.0"
 rstar = "0.11.0"
 wide = "0.7"
