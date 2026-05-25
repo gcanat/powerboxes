@@ -477,12 +477,13 @@ def test_rotated_nms_bad_dtype():
 
 @pytest.mark.parametrize("dtype", supported_dtypes)
 def test_lsap_iou(dtype):
-    # seeded + coords bounded so the cast is valid for every dtype, uint8 included
+    # seeded + tight bounds so the uint8 cast is valid AND box_areas's
+    # native-dtype multiply (x2-x1)*(y2-y1) doesn't overflow u8 (needs wh<=15).
     rng = np.random.default_rng(0)
-    topleft = rng.uniform(0, 150, size=(50, 2))
-    wh = rng.uniform(10, 50, size=(50, 2))
+    topleft = rng.uniform(0, 200, size=(50, 2))
+    wh = rng.uniform(5, 15, size=(50, 2))
     boxes1 = np.concatenate([topleft, topleft + wh], axis=1)
-    topleft2 = rng.uniform(0, 150, size=(50, 2))
+    topleft2 = rng.uniform(0, 200, size=(50, 2))
     boxes2 = np.concatenate([topleft2, topleft2 + wh], axis=1)
     pairs = lsap_iou(boxes1.astype(dtype), boxes2.astype(dtype))
     assert isinstance(pairs, list)
