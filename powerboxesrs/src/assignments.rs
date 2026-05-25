@@ -212,6 +212,24 @@ mod tests {
     }
 
     #[test]
+    fn test_parallel_iou_branch() {
+        // n1 * n2 = 90_601 > PARALLEL_IOU_MIN_BOXES (90_000), so this exercises
+        // the parallel_iou_distance_slice arm. Identity boxes keep the assignment
+        // trivial: pair i with i for all i.
+        let n = 301;
+        let mut boxes = Vec::with_capacity(n * 4);
+        for i in 0..n {
+            let f = i as f64;
+            boxes.extend_from_slice(&[f, f, f + 1.0, f + 1.0]);
+        }
+        let pairs = lsap_iou_slice(&boxes, &boxes, n, n, 0.0);
+        assert_eq!(pairs.len(), n);
+        for pair in pairs.iter() {
+            assert_eq!(pair.0, pair.1);
+        }
+    }
+
+    #[test]
     fn test_no_overlap_no_match() {
         let gt = vec![0.0_f64, 0.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0];
         let pred = vec![10.0_f64, 10.0, 11.0, 11.0, 12.0, 12.0, 13.0, 13.0];
