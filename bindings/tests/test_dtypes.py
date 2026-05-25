@@ -477,12 +477,12 @@ def test_rotated_nms_bad_dtype():
 
 @pytest.mark.parametrize("dtype", supported_dtypes)
 def test_lsap_iou(dtype):
-    # use non-degenerate integer-friendly coordinates so the cost matrix
-    # is well-defined across every supported dtype
-    topleft = np.random.uniform(0, 500, size=(50, 2))
-    wh = np.random.uniform(10, 100, size=(50, 2))
+    # seeded + coords bounded so the cast is valid for every dtype, uint8 included
+    rng = np.random.default_rng(0)
+    topleft = rng.uniform(0, 150, size=(50, 2))
+    wh = rng.uniform(10, 50, size=(50, 2))
     boxes1 = np.concatenate([topleft, topleft + wh], axis=1)
-    topleft2 = np.random.uniform(0, 500, size=(50, 2))
+    topleft2 = rng.uniform(0, 150, size=(50, 2))
     boxes2 = np.concatenate([topleft2, topleft2 + wh], axis=1)
     pairs = lsap_iou(boxes1.astype(dtype), boxes2.astype(dtype))
     assert isinstance(pairs, list)
